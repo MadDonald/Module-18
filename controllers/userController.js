@@ -31,14 +31,24 @@ module.exports = {
 
     async deleteUser(req, res) {
         const { userId: _id } = req.params;
-        const user = await User.findOneAndDelete({ _id }).catch(err => res.status(500).json({ message: err.message }));
-
-        if (!user) return res.status(400).json({ message: `No user with ID ${_id} found` });
-
-        await Thought.deleteMany({ _id: { $in: user?.thoughts } });
-
-        res.json({ message: "User deleted!" });
-    },
+        let user;
+        try {
+            user = await User.findOne({ _id });
+            if (!user) {
+                return res.status(400).json({ message: 'No user with that ID found' });
+            }
+            await User.deleteOne({ _id });
+        } catch (err) {
+            return res.status(500).json(err);
+        }
+    
+        try {
+            await Thought.deleteMany({ _id: { $in: user.thoughts } });
+            res.json("User deleted!");
+        } catch (err) {
+            res.status(500).json(err);
+        }
+    },    
 
     async addFriend(req, res) {
         const { userId: _id } = req.params;
